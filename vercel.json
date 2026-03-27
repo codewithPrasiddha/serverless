@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/helpdesk.py": {
-      "runtime": "vercel-python@3.0.7"
-    }
-  }
-}
