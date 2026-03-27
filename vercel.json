@@ -2,7 +2,7 @@
   "version": 2,
   "framework": null,
   "functions": {
-    "api/process.py": {
+    "api/helpdesk.py": {
       "runtime": "@vercel/python@4.3.1"
     }
   }
