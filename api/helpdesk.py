@@ -46,9 +46,11 @@ ESTIMATED RESOLUTION:
 
 ---
 
-Category: {category}
 Priority: {priority}
-Issue: {issue}"""
+Issue: {issue}
+
+Auto-detect the category from: Network, Hardware, Software, Account Access, Email & Comms, Other.
+Add "CATEGORY: [detected category]" as the very first line of your response."""
 
     payload = json.dumps({
         "contents": [
