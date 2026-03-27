@@ -1,3 +1,0 @@
-# No external packages needed!
-# We use only Python's built-in urllib and json.
-# Vercel will install these automatically.
