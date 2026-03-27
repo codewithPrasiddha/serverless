@@ -10,29 +10,39 @@ def call_gemini(issue: str, category: str, priority: str) -> str:
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
-    prompt = f"""You are a senior IT support technician with 10+ years experience in enterprise helpdesk environments.
-You provide structured, professional IT support responses.
-Always respond in this exact format with these exact section headers:
+    prompt = f"""You are a senior IT support technician with 10+ years of enterprise helpdesk experience.
+Analyze the issue below and respond using EXACTLY these section headers in this order.
+Do not skip any section. Do not add extra headers.
 
 DIAGNOSIS:
-[2-3 sentences explaining the root cause and what is likely happening technically]
+[2-3 sentences explaining the root cause and what is technically happening. Be specific.]
 
 RESOLUTION STEPS:
-1. [First step]
+1. [First actionable step with specific commands, paths, or settings where relevant]
 2. [Second step]
 3. [Third step]
 4. [Fourth step if needed]
 5. [Fifth step if needed]
 
 PRE-CHECK VERIFICATION:
-- [Thing to verify before starting]
-- [Another thing to check]
+- [Item to verify before starting]
+- [Another item to check]
 - [Another item]
 
 ESCALATION:
-[One paragraph: when to escalate this ticket, who to escalate to, and what information to gather before escalating]
+[One paragraph: when this should be escalated, who to escalate to (L2/L3/vendor/manager), and what information to collect before escalating.]
 
-Keep steps clear, concise and actionable. Use real technical commands or settings paths where relevant (e.g. Device Manager, ipconfig /release, etc). Be specific to the category and priority level provided.
+AGENT REPLY DRAFT:
+[Write a professional, empathetic 3-5 sentence message to send directly to the ticket reporter. Do not include a subject line or greeting placeholder. Acknowledge their issue, briefly explain what the team is doing, give one tip they can try right now, and state what happens next. Tone: helpful, clear, not robotic.]
+
+INTERNAL NOTE:
+[1-2 sentences for internal documentation only. Technical and factual. Include suspected root cause and first action taken.]
+
+RECOMMENDED ACTION:
+[Output exactly one option only: Remote Session / Phone Call / Email Response / Field Visit / Escalate to L2 / Escalate to L3 / Knowledge Base]
+
+ESTIMATED RESOLUTION:
+[Output a time range only, e.g.: 15-30 minutes / 1-2 hours / 4-8 hours / Next business day / Under 15 minutes]
 
 ---
 
@@ -45,7 +55,7 @@ Issue: {issue}"""
             {"role": "user", "parts": [{"text": prompt}]}
         ],
         "generationConfig": {
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 1500,
             "temperature": 0.3
         }
     }).encode("utf-8")
@@ -69,6 +79,7 @@ Issue: {issue}"""
 
 
 class handler(BaseHTTPRequestHandler):
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
