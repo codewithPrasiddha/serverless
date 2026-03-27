@@ -1,13 +1,17 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import urllib.request
+import urllib.error
 import os
 
 
-def call_claude(issue: str, category: str, priority: str) -> str:
-    system_prompt = """You are a senior IT support technician with 10+ years experience in enterprise helpdesk environments. 
-You provide structured, professional IT support responses.
+def call_gemini(issue: str, category: str, priority: str) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
+    system_prompt = """You are a senior IT support technician with 10+ years experience in enterprise helpdesk environments.
+You provide structured, professional IT support responses.
 Always respond in this exact format with these exact section headers:
 
 DIAGNOSIS:
@@ -32,33 +36,41 @@ Keep steps clear, concise and actionable. Use real technical commands or setting
 
     user_message = f"Category: {category}\nPriority: {priority}\n\nIssue: {issue}"
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-
     payload = json.dumps({
-        "model": "claude-haiku-4-5-20251001",
-        "max_tokens": 1024,
-        "system": system_prompt,
-        "messages": [{"role": "user", "content": user_message}]
+        "system_instruction": {
+            "parts": [{"text": system_prompt}]
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": user_message}]
+            }
+        ],
+        "generationConfig": {
+            "maxOutputTokens": 1024,
+            "temperature": 0.3
+        }
     }).encode("utf-8")
 
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+
     req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
+        url,
         data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01"
-        },
+        headers={"Content-Type": "application/json"},
         method="POST"
     )
 
-    with urllib.request.urlopen(req) as res:
-        body = json.loads(res.read().decode("utf-8"))
-        return body["content"][0]["text"]
+    try:
+        with urllib.request.urlopen(req) as res:
+            body = json.loads(res.read().decode("utf-8"))
+            return body["candidates"][0]["content"]["parts"][0]["text"]
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        raise RuntimeError(f"Gemini API error {e.code}: {error_body}")
 
 
 class handler(BaseHTTPRequestHandler):
-
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -78,7 +90,7 @@ class handler(BaseHTTPRequestHandler):
             if not issue:
                 raise ValueError("No issue description provided.")
 
-            result = call_claude(issue, category, priority)
+            result = call_gemini(issue, category, priority)
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -95,3 +107,16 @@ class handler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         pass
+```
+
+**Key changes made:**
+
+1. **Gemini API format** — uses `system_instruction` + `contents[].parts[]` structure, and the key goes in the URL as `?key=...` rather than a header
+2. **Better HTTP error handling** — catches `urllib.error.HTTPError` separately so you get the actual Gemini error message back instead of a generic 500
+3. **Key validation** — explicitly raises an error early if `GEMINI_API_KEY` isn't set, so you know exactly what's wrong
+
+**For your environment variables:**
+
+- **Locally** — create a `.env` file and add it to `.gitignore`:
+```
+  GEMINI_API_KEY=your_key_here
