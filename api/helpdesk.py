@@ -52,8 +52,8 @@ Keep steps clear, concise and actionable. Use real technical commands or setting
         }
     }).encode("utf-8")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    
     req = urllib.request.Request(
         url,
         data=payload,
